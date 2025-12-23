@@ -54,13 +54,12 @@
 # if __name__ == "__main__":
 #     run_step_8()
 
-
 import pandas as pd
 from data_loader import DataLoader
 from knowledge_base import KnowledgeBase
 from intent_dictionary import IntentDictionary
 from query_parser import QueryParser
-from feature_extractor import FeatureExtractor # Using the SOTA one
+from feature_extractor import FeatureExtractor
 from retriever import BM25Retriever
 from dataset_builder import DatasetBuilder
 
@@ -85,19 +84,17 @@ def run_step_8():
     retriever = BM25Retriever()
     retriever.fit(products_df)
     
-    # NEW: Initialize SOTA Feature Extractor directly
-    # No EnhancedFeatureExtractor needed anymore
+    # Initialize SOTA Feature Extractor
     sota_fe = FeatureExtractor(parser, retriever, products_df)
     
     # Build Dataset
     builder = DatasetBuilder(sota_fe, retriever, products_df)
     
-    # 1:3 ratio is good for balance
-    X, y, groups = builder.build_dataset(train_df, negative_ratio=3)
+    # --- FIX IS HERE: Do not unpack into X, y, groups. Assign to single variable ---
+    print("Building Dataset...")
+    full_training_data = builder.build_dataset(train_df, negative_ratio=3)
     
-    full_training_data = X.copy()
-    full_training_data['label'] = y
-    
+    # Save
     output_filename = 'ltr_training_data.csv'
     full_training_data.to_csv(output_filename, index=False)
     print(f"Training data saved to {output_filename}")

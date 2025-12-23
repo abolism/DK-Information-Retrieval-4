@@ -97,65 +97,48 @@ class InferenceEngine:
         self.ranker = ranker
 
     def format_pid(self, pid):
-        """Safely formats PID to integer string."""
         try:
             return str(int(float(str(pid))))
         except:
             return str(pid)
 
-    def generate_predictions(self, queries_df, output_path='submission.csv', top_k_candidates=100):
+    def generate_predictions(self, queries_df, output_path='submission.csv', top_k_candidates=200): # Increased Recall
         results = []
-        print(f"Starting Inference on {len(queries_df)} queries...")
+        # Coefficients based on your suggestion
+        ALPHA = 200.0  # Brand
+        BETA = 150.0   # Digits (Increased slightly to act as a hard filter)
+        THETA = 100.0  # Category
         
-        # Fallback PID (e.g. a generic valid PID if absolute zero results found)
-        # Using '0' or a known popular PID is safer than crashing
-        fallback_pid = '100000' 
+        print(f"Starting Ultra-Boost Inference on {len(queries_df)} queries...")
         
         for _, row in tqdm(queries_df.iterrows(), total=len(queries_df)):
             query_text = row['query']
-            
-            # 1. Retrieval
             candidates = self.retriever.retrieve(query_text, top_k=top_k_candidates)
             candidate_pids = [self.format_pid(c['p_id']) for c in candidates]
             
-            final_top_10 = []
-
-            # 2. Ranking (if we have candidates)
-            if candidate_pids:
-                feat_list = []
-                valid_pids = []
-                
-                for pid in candidate_pids:
-                    feats = self.extractor.extract_features(query_text, pid)
-                    if feats:
-                        feat_list.append(feats)
-                        valid_pids.append(pid)
-                
-                if feat_list:
-                    X_pred = pd.DataFrame(feat_list)
-                    scores = self.ranker.predict(X_pred)
-                    ranked = sorted(zip(valid_pids, scores), key=lambda x: x[1], reverse=True)
-                    final_top_10 = [x[0] for x in ranked[:10]]
-                else:
-                    final_top_10 = candidate_pids[:10]
+            scored_candidates = []
+            for pid in candidate_pids:
+                feats = self.extractor.extract_features(query_text, pid)
+                if feats:
+                    # Start with the ML model's base ranking 
+                    # (Usually a small number between -5 and 5)
+                    ml_score = self.ranker.predict(pd.DataFrame([feats]))[0]
+                    
+                    # Apply your coefficients
+                    brand_boost = ALPHA if feats.get('brand_match', 0) == 1.0 else 0.0
+                    digit_boost = BETA if feats.get('digit_match', 0) == 1.0 else 0.0
+                    cat_boost = THETA if feats.get('cat_match', 0) == 1.0 else 0.0
+                    
+                    # FINAL SCORE FUNCTION
+                    final_score = ml_score + brand_boost + digit_boost + cat_boost
+                    scored_candidates.append((pid, final_score))
             
-            # 3. PADDING (Crucial for perfect CSV)
-            # Fill from original candidates if ranker filtered too many
-            if len(final_top_10) < 10:
-                remaining = [p for p in candidate_pids if p not in final_top_10]
-                final_top_10.extend(remaining)
+            # Sort by the new weighted score
+            ranked = sorted(scored_candidates, key=lambda x: x[1], reverse=True)
+            final_top_10 = [x[0] for x in ranked[:10]]
             
-            # Fill with fallback if still empty
-            if len(final_top_10) < 10:
-                final_top_10.extend([fallback_pid] * (10 - len(final_top_10)))
-                
-            # Truncate strictly to 10
-            final_top_10 = final_top_10[:10]
+            # Fallback if extractor failed
+            if not final_top_10:
+                final_top_10 = candidate_pids[:10]
             
             results.append([query_text] + final_top_10)
-            
-        print("Saving Results...")
-        cols = ['query'] + [f'pid{i+1}' for i in range(10)]
-        df = pd.DataFrame(results, columns=cols)
-        df.to_csv(output_path, index=False)
-        print(f"Saved to {output_path}")
