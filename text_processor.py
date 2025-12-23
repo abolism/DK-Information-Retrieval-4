@@ -114,7 +114,13 @@ class PersianPreprocessor:
             'cable': 'کابل', 'airpod': 'ایرپاد', 'airpods': 'ایرپاد',
             'pro': 'پرو', 'max': 'مکس', 'ultra': 'الترا', 'plus': 'پلاس',
             'note': 'نوت', 'red': 'قرمز', 'blue': 'آبی', 'black': 'مشکی',
-            'white': 'سفید', 'gold': 'طلایی', 'silver': 'نقره ای'
+            'white': 'سفید', 'gold': 'طلایی', 'silver': 'نقره ای', 
+            'mobile': 'گوشی', 'phone': 'گوشی', 'تلفن': 'گوشی', 'همراه': 'گوشی',
+            'laptop': 'لپ تاپ', 'notebook': 'لپ تاپ',
+            'display': 'نمایشگر', 'monitor': 'مانیتور',
+            'earphone': 'هدفون', 'handsfree': 'هندزفری',
+            'cover': 'کاور', 'case': 'قاب', 'gard': 'گارد',
+            'ssd': 'اس اس دی', 'hard': 'هارد'
         }
         
         self.punc_pattern = re.compile(r'[!@#%^&*()_+\-=\[\]{};:\'",.<>/?\\|~`؟،«»]')

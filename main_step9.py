@@ -5,7 +5,7 @@ from ranker import PointwiseRanker
 def run_step_9():
     # 1. Load Training Data (Created in Step 8)
     try:
-        data = pd.read_csv('ltr_training_data2.csv')
+        data = pd.read_csv('ltr_training_data.csv')
     except FileNotFoundError:
         print("Training data not found. Please run Step 8.")
         return

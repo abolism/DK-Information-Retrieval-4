@@ -1,6 +1,7 @@
 import numpy as np
 from difflib import SequenceMatcher
-from feature_extractor import FeatureExtractor
+# from feature_extractor import FeatureExtractor
+from feature_extractor import SOTAFeatureExtractor
 from collections import Counter
 
 class EnhancedFeatureExtractor:
